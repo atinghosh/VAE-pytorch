@@ -52,10 +52,12 @@ class VAE(nn.Module):
         x = x.view(-1,128*28*28)
 
         mu_z = F.elu(self.fc11(x))
-        mu_z = F.softmax(self.fc12(mu_z))
+        #mu_z = F.softmax(self.fc12(mu_z))
+        mu_z =self.fc12(mu_z)
 
         logvar_z = F.elu(self.fc21(x))
-        logvar_z = F.softmax(self.fc22(logvar_z))
+        #logvar_z = F.softmax(self.fc22(logvar_z))
+        logvar_z = self.fc22(logvar_z)
 
         return mu_z, logvar_z
 
@@ -109,7 +111,7 @@ def loss_VAE(train_x,parameter_x, paramter_z):
 
     mu_z, logvar_z = paramter_z
     #Kullback Liebler Divergence
-    KLD = -0.5 * torch.sum(1 + logvar_z - mu_z.pow(2) - logvar_z.exp(),1) #mu_z.size()=[batch_size, 28*28]
+    negative_KLD = 0.5 * torch.sum(1 + logvar_z - mu_z.pow(2) - logvar_z.exp(),1) #mu_z.size()=[batch_size, 28*28]
 
     #nll
     train_x_flattened = train_x.view(-1, 28*28)
@@ -119,12 +121,12 @@ def loss_VAE(train_x,parameter_x, paramter_z):
         mu_x, logvar_x = param
         x = train_x_flattened[i]
 
-        log_likelihood_for_one_z = torch.sum(logvar_x,1)+ torch.sum(((x-mu_x).pow(2))/logvar_x.exp(),1) #log pθ(x^(i)|z^(i,l))
+        log_likelihood_for_one_z = torch.sum(logvar_x,1)+ torch.sum(((x-mu_x).pow(2))/(2*logvar_x.exp()),1) #log pθ(x^(i)|z^(i,l))
         nll_one_sample = torch.mean(log_likelihood_for_one_z) #Monte carlo average step to calculate expectation
         nll[i] = nll_one_sample
         i += 1
 
-    final_loss = KLD + nll
+    final_loss = negative_KLD + nll
     final_loss = torch.mean(final_loss)
 
     return final_loss

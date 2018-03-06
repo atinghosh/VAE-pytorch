@@ -7,7 +7,7 @@ from torchvision import datasets, transforms
 import numpy as np
 from torchvision.utils import save_image
 
-batch_size =16
+batch_size =200
 z_dim = 20
 no_of_sample = 1000
 #kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
@@ -80,7 +80,7 @@ def loss_VAE(train_x,parameter_x, paramter_z):
 
     mu_z, logvar_z = paramter_z
     #Kullback Liebler Divergence
-    KLD = 0.5 * torch.sum(1 + logvar_z - mu_z.pow(2) - logvar_z.exp(),1) #mu_z.size()=[batch_size, 28*28]
+    negative_KLD = 0.5 * torch.sum(1 + logvar_z - mu_z.pow(2) - logvar_z.exp(),1) #mu_z.size()=[batch_size, 28*28]
 
     #nll
     train_x_flattened = train_x.view(-1, 28*28)
@@ -90,12 +90,12 @@ def loss_VAE(train_x,parameter_x, paramter_z):
         mu_x, logvar_x = param
         x = train_x_flattened[i]
 
-        log_likelihood_for_one_z = torch.sum(logvar_x,1)+ torch.sum(((x-mu_x).pow(2))/logvar_x.exp(),1) #log pθ(x^(i)|z^(i,l))
+        log_likelihood_for_one_z = torch.sum(logvar_x,1)+ torch.sum(((x-mu_x).pow(2))/(2*logvar_x.exp()),1) #log pθ(x^(i)|z^(i,l))
         nll_one_sample = torch.mean(log_likelihood_for_one_z) #Monte carlo average step to calculate expectation
         nll[i] = nll_one_sample
         i += 1
 
-    final_loss = KLD + nll
+    final_loss = negative_KLD + nll
     final_loss = torch.mean(final_loss)
 
     return final_loss
