@@ -66,7 +66,7 @@ class VAE(nn.Module):
         :param no_of_sample: no of monte carlo sample
         :return: torch of size [N,no_of_sample,z_dim=20]
         '''
-        standard_normal_sample = Variable(torch.randn(batch_size,no_of_sample,z_dim))
+        standard_normal_sample = Variable(torch.randn(batch_size,no_of_sample,z_dim).cuda())
         mu_z, logvar_z = parameter_z
         mu_z = mu_z.unsqueeze(1)
         sigma = .5*logvar_z.exp()
