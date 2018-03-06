@@ -52,10 +52,10 @@ class VAE(nn.Module):
         x = x.view(-1,128*28*28)
 
         mu_z = F.elu(self.fc11(x))
-        mu_z = F.elu(self.fc12(mu_z))
+        mu_z = F.softmax(self.fc12(mu_z))
 
         logvar_z = F.elu(self.fc21(x))
-        logvar_z = F.elu(self.fc22(logvar_z))
+        logvar_z = F.softmax(self.fc22(logvar_z))
 
         return mu_z, logvar_z
 
@@ -81,11 +81,11 @@ class VAE(nn.Module):
         x = F.elu(self.fc2(x))
         x = x.view(-1,128,7,7)
         x = F.relu(self.conv_t1(x))
-        x = F.relu(self.conv_t2(x))
+        x = F.softmax(self.conv_t2(x))
         mu_x = x.view(-1,28*28)
 
         logvar_x = F.elu(self.fc3(z))
-        logvar_x = F.elu(self.fc4(logvar_x))
+        logvar_x = F.softmax(self.fc4(logvar_x))
 
         return mu_x, logvar_x
 
