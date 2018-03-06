@@ -114,7 +114,7 @@ def loss_VAE(train_x,parameter_x, paramter_z):
     #nll
     train_x_flattened = train_x.view(-1, 28*28)
     i = 0
-    nll = Variable(torch.FloatTensor(batch_size).zero_())
+    nll = Variable(torch.FloatTensor(batch_size).zero_().cuda())
     for param in parameter_x:
         mu_x, logvar_x = param
         x = train_x_flattened[i]
@@ -139,7 +139,7 @@ def train(epoch,model,trainloader,optimizer):
 
         train_x, _ = data
         count += train_x.size(0)
-        train_x = Variable(train_x.type(torch.FloatTensor))
+        train_x = Variable(train_x.type(torch.FloatTensor).cuda())
         paramter_z, parameter_x = model(train_x)
 
 
@@ -172,6 +172,8 @@ if __name__ == "__main__":
     model_parameters = filter(lambda p: p.requires_grad, model.parameters())
     nb_params = sum([np.prod(p.size()) for p in model_parameters])
     print("no. of trainable parametes is: {}".format((nb_params)))
+    model.cuda()
+
 
     optimizer = optim.Adam(model.parameters(), lr=.001)
 
