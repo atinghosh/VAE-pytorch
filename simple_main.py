@@ -80,7 +80,7 @@ def loss_VAE(train_x,parameter_x, paramter_z):
 
     mu_z, logvar_z = paramter_z
     #Kullback Liebler Divergence
-    KLD = -0.5 * torch.sum(1 + logvar_z - mu_z.pow(2) - logvar_z.exp(),1) #mu_z.size()=[batch_size, 28*28]
+    KLD = 0.5 * torch.sum(1 + logvar_z - mu_z.pow(2) - logvar_z.exp(),1) #mu_z.size()=[batch_size, 28*28]
 
     #nll
     train_x_flattened = train_x.view(-1, 28*28)
