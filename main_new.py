@@ -4,9 +4,10 @@ from torch import nn, optim
 from torch.autograd import Variable
 from torch.nn import functional as F
 from torchvision import datasets, transforms
+import numpy as np
 from torchvision.utils import save_image
 
-batch_size =200
+batch_size =16
 z_dim = 20
 no_of_sample = 1000
 #kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
@@ -58,7 +59,7 @@ class VAE(nn.Module):
 
         return mu_z, logvar_z
 
-    def reparametrized_sample(self,z,no_of_sample):
+    def reparametrized_sample(self,parameter_z,no_of_sample):
         '''
 
         :param z:
@@ -66,7 +67,7 @@ class VAE(nn.Module):
         :return: torch of size [N,no_of_sample,z_dim=20]
         '''
         standard_normal_sample = Variable(torch.randn(batch_size,no_of_sample,z_dim))
-        mu_z, logvar_z = z
+        mu_z, logvar_z = parameter_z
         mu_z = mu_z.unsqueeze(1)
         sigma = .5*logvar_z.exp()
         sigma = sigma.unsqueeze(1)
@@ -97,36 +98,63 @@ class VAE(nn.Module):
         :param x: input image
         :return: array of length = batch size, each element is a tuple of 2 elemets of size [no_of_sample=1000,28*28 (for MNIST)], corresponding to mu and logvar
         '''
-        z = self.encode(x)
-        sample_z = self.reparametrized_sample(z,no_of_sample)
+        parameter_z = self.encode(x)
+        sample_z = self.reparametrized_sample(parameter_z,no_of_sample)
         parameter_x = [self.decode(obs) for obs in sample_z]
 
-        return z, parameter_x
+        return parameter_z, parameter_x
 
 
-def loss_VAE(train_x,parameter_x, mu_z, logvar_z):
+def loss_VAE(train_x,parameter_x, paramter_z):
 
+    mu_z, logvar_z = paramter_z
     #Kullback Liebler Divergence
-    KLD = -0.5 * torch.sum(1 + logvar_z - mu_z.pow(2) - logvar_z.exp(),1)
+    KLD = -0.5 * torch.sum(1 + logvar_z - mu_z.pow(2) - logvar_z.exp(),1) #mu_z.size()=[batch_size, 28*28]
 
     #nll
     train_x_flattened = train_x.view(-1, 28*28)
     i = 0
+    nll = Variable(torch.FloatTensor(batch_size).zero_())
     for param in parameter_x:
         mu_x, logvar_x = param
         x = train_x_flattened[i]
-        i +=1
+
         log_likelihood_for_one_z = torch.sum(logvar_x,1)+ torch.sum(((x-mu_x).pow(2))/logvar_x.exp(),1) #log pθ(x^(i)|z^(i,l))
+        nll_one_sample = torch.mean(log_likelihood_for_one_z) #Monte carlo average step to calculate expectation
+        nll[i] = nll_one_sample
+        i += 1
+
+    final_loss = KLD + nll
+    final_loss = torch.mean(final_loss)
+
+    return final_loss
 
 
+def train(epoch,model,trainloader,optimizer):
+    model.train()
+
+    train_loss = 0
+    count = 0
+    for batch_id, data in enumerate(train_loader):
+
+        train_x, _ = data
+        count += train_x.size(0)
+        train_x = Variable(train_x.type(torch.FloatTensor))
+        paramter_z, parameter_x = model(train_x)
 
 
+        loss = loss_VAE(train_x, parameter_x, paramter_z)
+        train_loss += loss.data[0]
 
+        loss.backward()
+        optimizer.step()
 
+        if batch_id % 50 ==0:
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                epoch, batch_id * len(data), len(train_loader.dataset), 100. * batch_id / len(train_loader), loss.data[0]))
 
-
-
-
+    train_loss /= count
+    print('\nTrain set: Average loss: {:.4f}'.format(train_loss))
 
 
 
@@ -141,13 +169,23 @@ if __name__ == "__main__":
         batch_size=batch_size, shuffle=True)
 
     model = VAE()
-    for _, data in enumerate(train_loader):
-        data, _ = data
-        break
+    model_parameters = filter(lambda p: p.requires_grad, model.parameters())
+    nb_params = sum([np.prod(p.size()) for p in model_parameters])
+    print("no. of trainable parametes is: {}".format((nb_params)))
 
-    data = Variable(data.type(torch.FloatTensor))
-    z, parameter_x = model(data)
-    mu_z, logvar_z = z
+    optimizer = optim.Adam(model.parameters(), lr=.001)
+
+    nb_epoch = 2
+    for epoch in range(1, nb_epoch + 1):
+        train(epoch, model, train_loader, optimizer)
+
+
+
+
+
+
+
+
 
 
 
