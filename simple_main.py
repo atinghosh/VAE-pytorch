@@ -10,7 +10,6 @@ from torchvision.utils import save_image
 batch_size =200
 z_dim = 20
 no_of_sample = 1000
-#kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
 
 class VAE(nn.Module):
     def __init__(self):
