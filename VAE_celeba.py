@@ -216,7 +216,7 @@ def test(epoch, model, test_loader):
             save_image(comparison.data.cpu(),
                        './celeba/reconstruction_' + str(epoch) + '.png', nrow=n)
 
-        break #To save time
+        # break #To save time
 
     test_loss /= len(test_loader.dataset)
     print('====> Test set loss: {:.4f}'.format(test_loss))
@@ -226,11 +226,11 @@ if __name__ == "__main__":
     root_dir = "/home/atin/DeployedProjects/TestProject/img_align_celeba"
     image_files = os.listdir(root_dir)
     train_dataset = CelebaDataset(root_dir, image_files[:100000], (128, 128), transforms.Compose([ToTensor()]))
-    train_loader = DataLoader(train_dataset, batch_size=32, num_workers=10, shuffle=True)
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, num_workers=10, shuffle=True)
 
     #Take only 1000 images in test
     test_dataset = CelebaDataset(root_dir, image_files[100000:101000], (128, 128), transforms.Compose([ToTensor()]))
-    test_loader = DataLoader(test_dataset, batch_size=32, num_workers=10, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, num_workers=10, shuffle=True)
 
     EPOCHS = 10
     model = VAE()
