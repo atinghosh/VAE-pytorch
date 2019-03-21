@@ -1,7 +1,7 @@
 # Variational-Autoencoder
 Contains code to learn variational autoencoder model on MNIST dataset using pytorch.
 
-L = No. of montecarlo samples for gradient calculation
+L = No. of monte carlo samples for gradient calculation
 
 Gaussian loss is given by
 
